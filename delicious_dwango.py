@@ -14,17 +14,21 @@ def closest_delicious_color(c):
 
 def map_image(fn, im):
     (h,w,_) = im.shape
-    def to_rgb(a): 
-        [r,g,b] = a
+    def to_rgb(a):
+        if len(a) == 3:
+            [r,g,b] = a
+        else:
+            [r,g,b,_] = a
         return {"r": r, "g": g, "b": b}
     return [fn(to_rgb(im[y][x]), y, x) for x in range(w) for y in range(h)]
 
 def delicious_pixels(im):
     return map_image(lambda c,y,x: {"c": closest_delicious_color(c), "y": y, "x": x}, im)
 
+# I got x and y swapped... Fix here.
 def delicious_commands(im, yoff, xoff):
     for pix in delicious_pixels(im):
-        print(pix['c'] + ' ' + str(pix['y'] + yoff) + ',' + str(pix['x'] + xoff))
+        print(pix['c'] + ' ' + str(pix['x'] + xoff) + ',' + str(pix['y'] + yoff))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Give dwango chat commands for drawing an image in a delicious fashion.')
@@ -35,5 +39,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     im = imageio.imread(args.imagefile)
+    print(im.shape)
 
     delicious_commands(im, args.yoff, args.xoff)
