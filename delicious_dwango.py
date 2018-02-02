@@ -1,4 +1,6 @@
 import argparse
+import itertools
+
 import imageio
 from colors import colors
 
@@ -26,13 +28,29 @@ def delicious_pixels(im):
     return map_image(lambda c,y,x: {"c": closest_delicious_color(c), "y": y, "x": x}, im)
 
 # I got x and y swapped... Fix here.
-def delicious_commands(im, yoff, xoff):
-    for pix in delicious_pixels(im):
-        print(pix['c'] + ' ' + str(pix['x'] + xoff) + ',' + str(pix['y'] + yoff))
+def delicious_commands(im, yoff, xoff, window):
+    def pixel_color(pix): return pix["c"]
+    def pixel_coords(pix): return str(pix['x'] + xoff) + ',' + str(pix['y'] + yoff)
+    
+    p = sorted(delicious_pixels(im), key=pixel_color)
+
+    color_pixels = itertools.groupby(p, pixel_color)
+
+    commands = []
+
+    for c, vs in color_pixels:
+        pixels = list(vs)
+
+        i = 0
+
+        while i < len(pixels):
+            print(c + ' ' + ';'.join(map(pixel_coords, pixels[i:i+window])))
+            i += window
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Give dwango chat commands for drawing an image in a delicious fashion.')
     parser.add_argument("imagefile", type=str)
+    parser.add_argument("--window", type=int, default=5)
     parser.add_argument("--yoff", type=int, default=0)
     parser.add_argument("--xoff", type=int, default=0)
     
@@ -41,4 +59,4 @@ if __name__ == "__main__":
     im = imageio.imread(args.imagefile)
     print(im.shape)
 
-    delicious_commands(im, args.yoff, args.xoff)
+    delicious_commands(im, args.yoff, args.xoff, args.window)
