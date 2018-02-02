@@ -22,7 +22,14 @@ def map_image(fn, im):
         else:
             [r,g,b,_] = a
         return {"r": r, "g": g, "b": b}
-    return [fn(to_rgb(im[y][x]), y, x) for x in range(w) for y in range(h)]
+    def trans(p):
+        a = 1
+        if len(p) == 3:
+            [r,g,b] = p
+        else:
+            [r,g,b,a] = p
+        return a == 0
+    return [fn(to_rgb(im[y][x]), y, x) for x in range(w) for y in range(h) if not trans(im[y][x])]
 
 def delicious_pixels(im):
     return map_image(lambda c,y,x: {"c": closest_delicious_color(c), "y": y, "x": x}, im)
@@ -53,8 +60,12 @@ if __name__ == "__main__":
     parser.add_argument("--window", type=int, default=5)
     parser.add_argument("--yoff", type=int, default=0)
     parser.add_argument("--xoff", type=int, default=0)
-    
+    parser.add_argument("--gross", action='store_true')
+
     args = parser.parse_args()
+
+    if(args.gross):
+        delicious_colors = colors
 
     im = imageio.imread(args.imagefile)
     print(im.shape)
