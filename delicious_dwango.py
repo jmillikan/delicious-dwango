@@ -14,6 +14,14 @@ def color_dist(c1, c2):
 def closest_delicious_color(c): 
     return min(delicious_colors, key=lambda k: color_dist(delicious_colors[k], c))
 
+def closest_color(c): 
+    return min(colors, key=lambda k: color_dist(colors[k], c))
+
+def just_color(c):
+    return "#" + format(c["r"], '02x') + format(c["g"], '02x') + format(c["b"], '02x')
+
+rgb_to_color = None
+
 def map_image(fn, im):
     (h,w,_) = im.shape
     def to_rgb(a):
@@ -32,7 +40,7 @@ def map_image(fn, im):
     return [fn(to_rgb(im[y][x]), y, x) for x in range(w) for y in range(h) if not trans(im[y][x])]
 
 def delicious_pixels(im):
-    return map_image(lambda c,y,x: {"c": closest_delicious_color(c), "y": y, "x": x}, im)
+    return map_image(lambda c,y,x: {"c": rgb_to_color(c), "y": y, "x": x}, im)
 
 # I got x and y swapped... Fix here.
 def delicious_commands(im, yoff, xoff, window):
@@ -57,15 +65,21 @@ def delicious_commands(im, yoff, xoff, window):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Give dwango chat commands for drawing an image in a delicious fashion.')
     parser.add_argument("imagefile", type=str)
-    parser.add_argument("--window", type=int, default=5)
-    parser.add_argument("--yoff", type=int, default=0)
-    parser.add_argument("--xoff", type=int, default=0)
-    parser.add_argument("--gross", action='store_true')
+    parser.add_argument("--window", type=int, default=5, help='Pixels per chat line')
+    parser.add_argument("--yoff", type=int, default=1, help='y-offset of top left pixel')
+    parser.add_argument("--xoff", type=int, default=1, help='x-offset of top left pixel')
+    parser.add_argument("--mode", type=str, default='delicious', help='Determines what colors get written - delicious, gross or hex')
 
     args = parser.parse_args()
 
-    if(args.gross):
-        delicious_colors = colors
+    if args.mode == 'delicious':
+        rgb_to_color = closest_delicious_color
+    elif args.mode == 'gross':
+        rgb_to_color = closest_color
+    elif args.mode == 'hex':
+        rgb_to_color = just_color
+    else:
+        raise Exception("Color mode must be delicious, gross or hex")
 
     im = imageio.imread(args.imagefile)
     print(im.shape)
