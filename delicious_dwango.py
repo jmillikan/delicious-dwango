@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import itertools
 
@@ -29,7 +31,8 @@ def map_image(fn, im):
             [r,g,b] = a
         else:
             [r,g,b,_] = a
-        return {"r": r, "g": g, "b": b}
+        # int(x) handles 16-bit PNG
+        return {"r": int(r), "g": int(g), "b": int(b)}
     def trans(p):
         a = 1
         if len(p) == 3:
