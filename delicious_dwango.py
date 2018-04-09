@@ -71,7 +71,7 @@ if __name__ == "__main__":
     parser.add_argument("--window", type=int, default=5, help='Pixels per chat line')
     parser.add_argument("--yoff", type=int, default=1, help='y-offset of top left pixel')
     parser.add_argument("--xoff", type=int, default=1, help='x-offset of top left pixel')
-    parser.add_argument("--mode", type=str, default='hex', help='Determines what colors get written - delicious, gross or hex')
+    parser.add_argument("--mode", type=str, default='delicious', help='Determines what colors get written - delicious, gross or hex')
 
     args = parser.parse_args()
 
