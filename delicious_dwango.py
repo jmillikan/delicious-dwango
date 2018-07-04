@@ -22,6 +22,12 @@ def closest_color(c):
 def just_color(c):
     return "#" + format(c["r"], '02x') + format(c["g"], '02x') + format(c["b"], '02x')
 
+def nearest_eight(n):
+    return min(255, int(round(n / 24.0) * 24.0))
+
+def eighth_hex(c):
+    return "#" + format(nearest_eight(c["r"]), '02x') + format(nearest_eight(c["g"]), '02x') + format(nearest_eight(c["b"]), '02x')
+
 rgb_to_color = None
 
 def map_image(fn, im):
@@ -72,6 +78,8 @@ if __name__ == "__main__":
     parser.add_argument("--yoff", type=int, default=1, help='y-offset of top left pixel')
     parser.add_argument("--xoff", type=int, default=1, help='x-offset of top left pixel')
     parser.add_argument("--mode", type=str, default='delicious', help='Determines what colors get written - delicious, gross or hex')
+    parser.add_argument("--maxy", type=int, default=92)
+    parser.add_argument("--maxx", type=int, default=123)
 
     args = parser.parse_args()
 
@@ -81,10 +89,26 @@ if __name__ == "__main__":
         rgb_to_color = closest_color
     elif args.mode == 'hex':
         rgb_to_color = just_color
+    elif args.mode == 'reduced-hex':
+        rgb_to_color = eighth_hex
     else:
         raise Exception("Color mode must be delicious, gross or hex")
 
     im = imageio.imread(args.imagefile)
-    print(im.shape)
+
+    h = im.shape[0]
+    w = im.shape[1]
+
+    if not (1 <= args.yoff <= args.maxy):
+        raise Exception("Y offset must be between 1 and 92")
+
+    if not (1 <= args.yoff + h - 1 <= args.maxy):
+        raise Exception("Image goes off top. Y offset + image height must be between 1 and 92")
+
+    if not (1 <= args.xoff <= args.maxx):
+        raise Exception("X offset must be between 1 and 123")
+
+    if not (1 <= args.xoff + w - 1 <= args.maxx):
+        raise Exception("Image goes off right. X offset + image width must be between 1 and 123")
 
     delicious_commands(im, args.yoff, args.xoff, args.window)
