@@ -2,6 +2,8 @@
 
 import argparse
 import itertools
+import math
+import pprint
 
 import imageio
 from colors import colors
@@ -49,26 +51,112 @@ def map_image(fn, im):
     return [fn(to_rgb(im[y][x]), y, x) for x in range(w) for y in range(h) if not trans(im[y][x])]
 
 def delicious_pixels(im):
-    return map_image(lambda c,y,x: {"c": rgb_to_color(c), "y": y, "x": x}, im)
+    return map_image(lambda c,y,x: {"c": c, "y": y, "x": x}, im)
+
+def tuple_to_rgb(t):
+    (r, g, b) = t
+    return {"r": r, "g": g, "b": b}
+
+def rgb_to_tuple(r):
+    return (r["r"], r["g"], r["b"])
+
+def mask_color_bit(x, n):
+    bits = float(2 ** n)
+    return min(255, int(round(x / bits) * bits))
+
+def mask_color_bits(t, n):
+    return tuple(map(lambda x: mask_color_bit(x, n), t))
+
+def do_graded_reduce(ps, pixel_color):
+    color_pixels = itertools.groupby(ps, pixel_color)
+
+    d = {}
+    for tuple_c, vs in color_pixels:
+        d[tuple_c] = list(vs)
+
+    color_pixels = d
+
+    ENOUGH = 25
+    MAX_MASK = 7
+
+    enough_pixels = {}
+
+    # Well, this is gonna be wrong once I run it...
+    not_enough_pixels = {}
+
+    for x in range(MAX_MASK):
+        for tuple_c, vs in color_pixels.items():
+            pixels = list(vs)
+
+            if len(pixels) > ENOUGH:
+                if tuple_c in enough_pixels:
+                    enough_pixels[tuple_c] += pixels
+                else:
+                    enough_pixels[tuple_c] = pixels
+            else:
+                reduced_c = mask_color_bits(tuple_c, x)
+
+                if reduced_c in enough_pixels:
+                    enough_pixels[reduced_c] += pixels
+                elif reduced_c in not_enough_pixels:
+                    not_enough_pixels[reduced_c] += pixels
+                else:
+                    not_enough_pixels[reduced_c] = pixels
+
+        color_pixels = not_enough_pixels
+        not_enough_pixels = {}
+
+    for tuple_c, vs in color_pixels.items():
+        pixels = list(vs)
+        if tuple_c in enough_pixels:
+            enough_pixels[tuple_c] += pixels
+        else:
+            enough_pixels[tuple_c] = pixels
+
+    return enough_pixels
+
 
 # I got x and y swapped... Fix here.
-def delicious_commands(im, yoff, xoff, window):
-    def pixel_color(pix): return pix["c"]
+def delicious_commands(im, yoff, xoff, window, graded_reduce, flat_reduce):
+    def pixel_color(pix): return rgb_to_tuple(pix["c"])
     def pixel_coords(pix): return str(pix['x'] + xoff) + ',' + str(pix['y'] + yoff)
     
     p = sorted(delicious_pixels(im), key=pixel_color)
 
-    color_pixels = itertools.groupby(p, pixel_color)
+    if graded_reduce:
+        color_pixels = do_graded_reduce(p, pixel_color)
+    elif flat_reduce:
+        color_pixels = itertools.groupby(p, lambda c: mask_color_bits(rgb_to_tuple(c["c"]), 4))
+
+        d = {}
+        for tuple_c, vs in color_pixels:
+            d[tuple_c] = list(vs)
+
+        color_pixels = d
+    else:
+        color_pixels = itertools.groupby(p, lambda c: rgb_to_tuple(c["c"]))
+
+        d = {}
+        for tuple_c, vs in color_pixels:
+            d[tuple_c] = list(vs)
+
+        color_pixels = d
 
     commands = []
 
-    for c, vs in color_pixels:
+    
+    for tuple_c, vs in color_pixels.items():
         pixels = list(vs)
+
+        # TODO: We still have the original color of all the pixels
+        # Average the color of all the pixels instead of just using the reduction...
+
+        s_c = rgb_to_color(tuple_to_rgb(tuple_c))
 
         i = 0
 
         while i < len(pixels):
-            print(c + ' ' + ';'.join(map(pixel_coords, pixels[i:i+window])))
+            print(s_c + ' ' + ';'.join(map(pixel_coords, pixels[i:i+window])))
             i += window
 
 if __name__ == "__main__":
@@ -90,7 +178,9 @@ if __name__ == "__main__":
     elif args.mode == 'hex':
         rgb_to_color = just_color
     elif args.mode == 'reduced-hex':
-        rgb_to_color = eighth_hex
+        rgb_to_color = just_color
+    elif args.mode == 'graded-reduce':
+        rgb_to_color = just_color
     else:
         raise Exception("Color mode must be delicious, gross or hex")
 
@@ -111,4 +201,4 @@ if __name__ == "__main__":
     if not (1 <= args.xoff + w - 1 <= args.maxx):
         raise Exception("Image goes off right. X offset + image width must be between 1 and 123")
 
-    delicious_commands(im, args.yoff, args.xoff, args.window)
+    delicious_commands(im, args.yoff, args.xoff, args.window, args.mode == 'graded-reduce', args.mode == 'reduced-hex')
