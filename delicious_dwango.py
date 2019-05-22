@@ -6,6 +6,8 @@ import math
 import pprint
 
 import imageio
+import PBNHelper
+
 from colors import colors
 
 delicious_color_keys = ['liliac', 'cream', 'creme', 'orangeish', 'wine', 'pear', 'butter', 'blood', 'maize', 'sunflower', 'avocado', 'mushroom', 'saffron', 'russet', 'cranberry', 'aqua', 'bordeaux', 'rose', 'pumpkin', 'orange', 'chocolate', 'cocoa', 'raspberry', 'pistachio', 'watermelon', 'caramel', 'tomato', 'lime', 'lemon', 'goldenrod', 'velvet', 'chestnut', 'mint', 'apricot', 'merlot', 'wheat', 'celery', 'mulberry', 'melon', 'claret', 'banana', 'pea', 'grape', 'cherry', 'grapefruit', 'eggshell', 'lilac', 'salmon', 'cornflower', 'wintergreen', 'kiwi', 'cinnamon', 'sage', 'asparagus', 'berry', 'peach', 'mango', 'ice', 'burgundy', 'mocha', 'blurple', 'burple', 'tangerine', 'spearmint', 'bubblegum', 'eggplant', 'squash', 'butterscotch', 'blueberry', 'custard', 'apple', 'olive', 'seaweed', 'coffee', 'mustard', 'strawberry', 'aubergine', 'plum']
@@ -144,30 +146,46 @@ def delicious_commands(im, yoff, xoff, window, graded_reduce, flat_reduce):
 
     commands = []
 
-    
+    up = PBNHelper.UnicodeProtocol(132, 99) # TODO
+
+    # Transform my color_pixels dict into the PBNHelper dict
+    up_dict = {}
+
     for tuple_c, vs in color_pixels.items():
-        pixels = list(vs)
+        up_dict[up.get_color_rgb(tuple_c[0], tuple_c[1], tuple_c[2])] = map(lambda v: up.get_cord(v['x'], v['y']), vs)
+    
+    list(map(print, up.generate_messages(up_dict)))
 
-        # TODO: We still have the original color of all the pixels
-        # Average the color of all the pixels instead of just using the reduction...
+    # pixels_list = []
 
-        s_c = rgb_to_color(tuple_to_rgb(tuple_c))
+    # for tuple_c, vs in color_pixels.items():
+    #     for v in vs:
+    #         # v is...
+    #         pixels_list.append((up.get_cord(v['x'], v['y']), up.get_color_rgb(tuple_c[0], tuple_c[1], tuple_c[2])))
 
-        i = 0
+    # for tuple_c, vs in color_pixels.items():
+    #     pixels = list(vs)
 
-        while i < len(pixels):
-            print(s_c + ' ' + ';'.join(map(pixel_coords, pixels[i:i+window])))
-            i += window
+    #     # TODO: We still have the original color of all the pixels
+    #     # Average the color of all the pixels instead of just using the reduction...
+
+    #     s_c = rgb_to_color(tuple_to_rgb(tuple_c))
+
+    #     i = 0
+
+    #     while i < len(pixels):
+    #         print(s_c + ' ' + ';'.join(map(pixel_coords, pixels[i:i+window])))
+    #         i += window
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Give dwango chat commands for drawing an image in a delicious fashion.')
     parser.add_argument("imagefile", type=str)
-    parser.add_argument("--window", type=int, default=5, help='Pixels per chat line')
+    parser.add_argument("--window", type=int, default=65, help='Pixels per chat line')
     parser.add_argument("--yoff", type=int, default=1, help='y-offset of top left pixel')
     parser.add_argument("--xoff", type=int, default=1, help='x-offset of top left pixel')
-    parser.add_argument("--mode", type=str, default='delicious', help='Determines what colors get written - delicious, gross or hex')
-    parser.add_argument("--maxy", type=int, default=92)
-    parser.add_argument("--maxx", type=int, default=123)
+    parser.add_argument("--mode", type=str, default='graded-reduce', help='Determines what colors get written - delicious, gross or hex')
+    parser.add_argument("--maxy", type=int, default=99)
+    parser.add_argument("--maxx", type=int, default=132)
 
     args = parser.parse_args()
 
